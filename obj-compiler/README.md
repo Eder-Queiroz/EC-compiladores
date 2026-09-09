@@ -53,7 +53,7 @@ mvn test
 ```
 
 ```bash
-mvn package && java -jar target/obj-lexer.jar samples/cube.obj
+mvn package && java -jar target/obj-compiler.jar samples/cube.obj
 ```
 
 Sem argumento, o programa imprime o modo de usar e analisa `samples/cube.obj`.
@@ -136,3 +136,86 @@ saída 1.
 | `App` | linha de comando |
 
 O analisador é escrito à mão, sem expressões regulares e sem gerador léxico.
+
+## Análise sintática
+
+Gramática do analisador recursivo-descendente:
+
+```
+<model>             ::= <commands>
+<commands>          ::= <command> <commands> | ε
+<command>           ::= KW_MTLLIB IDENTIFICADOR | KW_USEMTL IDENTIFICADOR
+                      | KW_G IDENTIFICADOR | KW_O IDENTIFICADOR
+                      | KW_V <number> <number> <number>
+                      | KW_VN <number> <number> <number>
+                      | KW_VT <number> <number>
+                      | KW_F <vertex> <vertex> <vertex> <more_vertices>
+<more_vertices>     ::= <vertex> <more_vertices> | ε
+<vertex>            ::= INTEIRO <references>
+<references>        ::= BARRA <texture_reference> | ε
+<texture_reference> ::= INTEIRO <normal_reference> | BARRA INTEIRO
+<normal_reference>  ::= BARRA INTEIRO | ε
+<number>            ::= INTEIRO | FLOAT
+```
+
+### Mapeamento de não-terminais para métodos
+
+| Não-terminal | Método |
+|---|---|
+| `<model>` | `model()` |
+| `<commands>` | `commands()` |
+| `<command>` | `command()` |
+| `<more_vertices>` | `moreVertices()` |
+| `<vertex>` | `vertex()` |
+| `<references>` | `references()` |
+| `<texture_reference>` | `textureReference()` |
+| `<normal_reference>` | `normalReference()` |
+| `<number>` | `number()` |
+
+### Formas de referência de vértice
+
+Faces em OBJ aceitam quatro formas de referência de vértice:
+
+| Forma | Derivação | Exemplo |
+|---|---|---|
+| Vértice apenas | `INTEIRO` | `f 3 7 8` |
+| Vértice + textura | `INTEIRO BARRA INTEIRO` | `f 3/10 7/6 8/5` |
+| Vértice + normal | `INTEIRO BARRA BARRA INTEIRO` | `f 3//1 7//1 8//1` |
+| Vértice + textura + normal | `INTEIRO BARRA INTEIRO BARRA INTEIRO` | `f 3/10/1 7/6/1 8/5/1` |
+
+### Limitações assumidas
+
+- Vértices com quarto componente (forma `v x y z w`) não são aceitos.
+- Coordenadas de textura com terceiro componente (forma `vt u v w`) não são aceitas.
+
+### Modos de execução
+
+1. **Análise sintática completa** (padrão):
+   ```bash
+   java -jar target/obj-compiler.jar samples/cube.obj
+   ```
+   Analisa o arquivo especificado e imprime sucesso ou erro.
+
+2. **Modo tokens** (apenas léxico):
+   ```bash
+   java -jar target/obj-compiler.jar samples/cube.obj --tokens
+   ```
+   Analisa e lista todos os tokens do arquivo.
+
+### Saída
+
+Análise bem-sucedida:
+```
+Análise sintática concluída sem erros: samples/cube.obj
+```
+
+Listagem de tokens (final do arquivo):
+```
+Token [89, 1, classe=EOF]
+```
+
+Erro sintático (arquivo com apenas dois vértices de face):
+```
+Erro sintático: faltou o índice do vértice na face (linha 2, coluna 1)
+exit=1
+```
