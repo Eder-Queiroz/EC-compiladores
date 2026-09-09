@@ -18,7 +18,7 @@ public final class App {
     public static void main(String[] args) {
         Path sourceFile = Path.of(args.length > 0 ? args[0] : DEFAULT_SAMPLE);
         if (args.length == 0) {
-            System.out.println("Modo de usar: java -jar obj-lexer.jar <arquivo>");
+            System.out.println("Modo de usar: java -jar obj-compiler.jar <arquivo>");
             System.out.println("Analisando o exemplo padrão: " + DEFAULT_SAMPLE);
             System.out.println();
         }
