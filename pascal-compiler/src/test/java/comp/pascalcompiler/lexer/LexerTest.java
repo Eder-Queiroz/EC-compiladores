@@ -212,4 +212,30 @@ class LexerTest {
         assertEquals(TokenType.DOT, tokens.get(tokens.size() - 2).type());
         assertEquals(TokenType.EOF, tokens.get(tokens.size() - 1).type());
     }
+
+    @Test
+    void ignoresLineComment() throws LexicalException {
+        assertEquals(
+                List.of("Token [1, 1, classe=VAR, valor=var]",
+                        "Token [2, 1, classe=ID, valor=x]",
+                        "Token [2, 2, classe=EOF]"),
+                printedTokensOf("var // comentário de linha\nx"));
+    }
+
+    @Test
+    void ignoresLineCommentAtEndOfFile() throws LexicalException {
+        assertEquals(
+                List.of("Token [1, 1, classe=VAR, valor=var]", "Token [1, 18, classe=EOF]"),
+                printedTokensOf("var // sem quebra"));
+    }
+
+    @Test
+    void keepsSingleSlashAsDivision() throws LexicalException {
+        assertEquals(
+                List.of("Token [1, 1, classe=INTNUM, valor=6]",
+                        "Token [1, 3, classe=DIVIDE, valor=/]",
+                        "Token [1, 5, classe=INTNUM, valor=2]",
+                        "Token [1, 6, classe=EOF]"),
+                printedTokensOf("6 / 2"));
+    }
 }

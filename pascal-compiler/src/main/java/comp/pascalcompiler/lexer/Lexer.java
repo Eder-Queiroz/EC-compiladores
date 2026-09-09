@@ -37,7 +37,6 @@ public final class Lexer {
             Map.entry('+', TokenType.PLUS),
             Map.entry('-', TokenType.MINUS),
             Map.entry('*', TokenType.TIMES),
-            Map.entry('/', TokenType.DIVIDE),
             Map.entry(';', TokenType.SEMICOLON),
             Map.entry(',', TokenType.COMMA),
             Map.entry('.', TokenType.DOT),
@@ -78,6 +77,14 @@ public final class Lexer {
                     continue;
                 }
                 return symbol(TokenType.LEFT_PAREN, "(", line, column);
+            }
+            if (reader.current() == '/') {
+                reader.advance();
+                if (!reader.isAtEnd() && reader.current() == '/') {
+                    skipLineComment();
+                    continue;
+                }
+                return symbol(TokenType.DIVIDE, "/", line, column);
             }
             if (Character.isLetter(reader.current())) {
                 return readWord(line, column);
@@ -138,6 +145,12 @@ public final class Lexer {
             }
         }
         throw new LexicalException("comentário não terminado", line, column);
+    }
+
+    private void skipLineComment() {
+        while (!reader.isAtEnd() && reader.current() != '\n') {
+            reader.advance();
+        }
     }
 
     private Token readString(int line, int column) throws LexicalException {
