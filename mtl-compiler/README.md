@@ -1,4 +1,4 @@
-# Analisador Léxico — MTL (Material Template Library)
+# Compilador MTL (Material Template Library)
 
 Reconhece os itens léxicos de arquivos `.mtl`, o "arquivo de cabeçalho" de
 propriedades visuais de um `.obj`. O `.obj` não guarda a imagem da textura: ele
@@ -51,10 +51,10 @@ mvn test
 ```
 
 ```bash
-mvn package && java -jar target/mtl-lexer.jar samples/cube.mtl
+mvn package && java -jar target/mtl-compiler.jar samples/cube.mtl
 ```
 
-Sem argumento, o programa imprime o modo de usar e analisa `samples/cube.mtl`.
+Sem argumento, o programa imprime o modo de usar e analisa `samples/cube.mtl`. O programa oferece dois modos: análise sintática completa (modo padrão) ou apenas listagem de tokens (modo `--tokens`).
 
 ## Saída
 
@@ -101,6 +101,77 @@ Erro léxico: caractere inválido '$' (linha 2, coluna 1)
 | `lexer/Token` | classe, valor e posição |
 | `lexer/Lexer` | o autômato: separadores, comentários, palavras reservadas e números |
 | `lexer/LexicalException` | erro léxico com posição |
+| `parser/Parser` | analisador sintático recursivo descendente |
+| `parser/SyntaxException` | erro sintático com posição |
 | `App` | linha de comando |
 
-O analisador é escrito à mão, sem expressões regulares e sem gerador léxico.
+O analisador léxico é escrito à mão, sem expressões regulares e sem gerador léxico.
+
+## Análise sintática
+
+A segunda fase do compilador implementa um analisador sintático recursivo descendente que valida a estrutura de um arquivo `.mtl` segundo a seguinte gramática:
+
+```
+<material_library> ::= <materials>
+<materials>        ::= <material> <materials> | ε
+<material>         ::= KW_NEWMTL IDENTIFICADOR <properties>
+<properties>       ::= <property> <properties> | ε
+<property>         ::= KW_KA <color> | KW_KD <color> | KW_KS <color>
+                     | KW_NS <number> | KW_ILLUM INTEIRO | KW_MAP_KD IDENTIFICADOR
+<color>            ::= <number> <number> <number>
+<number>           ::= INTEIRO | FLOAT
+```
+
+### Mapeamento entre não-terminais e métodos
+
+| Não-terminal | Método |
+|---|---|
+| `<material_library>` | `materialLibrary()` |
+| `<materials>` | `materials()` |
+| `<material>` | `material()` |
+| `<properties>` | `properties()` |
+| `<property>` | `property()` |
+| `<color>` | `color()` |
+| `<number>` | `number(String)` |
+
+### Semântica
+
+As propriedades de um material (`Ka`, `Kd`, `Ks`, `Ns`, `illum`, `map_Kd`) podem aparecer em qualquer ordem e ser repetidas, pois o formato MTL não impõe restrições a respeito.
+
+### Modos de execução
+
+**Modo análise sintática (padrão):**
+
+```bash
+java -jar target/mtl-compiler.jar <arquivo>
+```
+
+Analisa o arquivo e reporta sucesso ou erro sintático.
+
+**Modo apenas tokens:**
+
+```bash
+java -jar target/mtl-compiler.jar <arquivo> --tokens
+```
+
+Lista todos os tokens do arquivo sem realizar análise sintática.
+
+### Exemplos de saída
+
+Sucesso — análise completa:
+
+```
+Análise sintática concluída sem erros: samples/cube.mtl
+```
+
+Modo tokens — último token (EOF):
+
+```
+Token [8, 1, classe=EOF]
+```
+
+Erro — propriedade incompleta:
+
+```
+Erro sintático: faltou a componente azul da cor (linha 3, coluna 1)
+```
