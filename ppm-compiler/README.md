@@ -37,7 +37,7 @@ mvn test
 ```
 
 ```bash
-mvn package && java -jar target/ppm-lexer.jar samples/sample.ppm
+mvn package && java -jar target/ppm-compiler.jar samples/sample.ppm
 ```
 
 Sem argumento, o programa imprime o modo de usar e analisa `samples/sample.ppm`.
@@ -97,3 +97,66 @@ Erro léxico: caractere inválido '@' (linha 2, coluna 1)
 | `App` | linha de comando: imprime os tokens e traduz erro em código de saída |
 
 O analisador é escrito à mão, sem expressões regulares e sem gerador léxico.
+
+## Análise sintática
+
+Analisa a estrutura de imagens PPM usando um analisador sintático descendente recursivo.
+
+### Gramática
+
+```
+<image>         ::= MAGIC <dimensions> <maximum_color> <pixels>
+<dimensions>    ::= NUMERO NUMERO
+<maximum_color> ::= NUMERO
+<pixels>        ::= <pixel> <pixels> | ε
+<pixel>         ::= NUMERO NUMERO NUMERO
+```
+
+### Mapeamento de não-terminais para métodos
+
+| Não-terminal | Método |
+|---|---|
+| `<image>` | `image()` |
+| `<dimensions>` | `dimensions()` |
+| `<maximum_color>` | `maximumColor()` |
+| `<pixels>` | `pixels()` |
+| `<pixel>` | `pixel()` |
+
+**Nota:** A validação de contagem de pixels contra largura × altura é análise semântica e fica fora do escopo do analisador sintático.
+
+### Execução
+
+O programa oferece dois modos:
+
+1. **Análise sintática completa** (padrão):
+   ```bash
+   java -jar target/ppm-compiler.jar <arquivo>
+   ```
+   Analisa o arquivo e imprime sucesso ou erro com posição.
+
+2. **Modo tokens** (debug):
+   ```bash
+   java -jar target/ppm-compiler.jar <arquivo> --tokens
+   ```
+   Imprime todos os tokens do arquivo.
+
+### Exemplos
+
+Análise sintática bem-sucedida:
+```
+$ java -jar target/ppm-compiler.jar samples/sample.ppm
+Análise sintática concluída sem erros: samples/sample.ppm
+```
+
+Modo tokens (última linha):
+```
+$ java -jar target/ppm-compiler.jar samples/sample.ppm --tokens | tail -1
+Token [7, 1, classe=EOF]
+```
+
+Erro sintático:
+```
+$ printf 'P3 1 1 255 0 0' > /tmp/curto.ppm
+$ java -jar target/ppm-compiler.jar /tmp/curto.ppm
+Erro sintático: faltou a componente azul do pixel (linha 1, coluna 15)
+```
