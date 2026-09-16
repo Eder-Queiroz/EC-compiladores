@@ -49,7 +49,7 @@ public final class Parser {
             return;
         }
         if (accept(TokenType.KW_NS)) {
-            number("faltou o valor do expoente especular depois de 'Ns'");
+            expect(TokenType.FLOAT, "faltou o valor do expoente especular depois de 'Ns'");
             return;
         }
         if (accept(TokenType.KW_ILLUM)) {
@@ -61,17 +61,11 @@ public final class Parser {
     }
 
     private void color() throws CompilationException {
-        number("faltou a componente vermelha da cor");
-        number("faltou a componente verde da cor");
-        number("faltou a componente azul da cor");
+        expect(TokenType.FLOAT, "faltou a componente vermelha da cor");
+        expect(TokenType.FLOAT, "faltou a componente verde da cor");
+        expect(TokenType.FLOAT, "faltou a componente azul da cor");
     }
 
-    private void number(String message) throws CompilationException {
-        if (accept(TokenType.INTEIRO) || accept(TokenType.FLOAT)) {
-            return;
-        }
-        throw new SyntaxException(message, token.line(), token.column());
-    }
 
     private void advance() throws CompilationException {
         token = lexer.nextToken();

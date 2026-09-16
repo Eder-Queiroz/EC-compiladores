@@ -117,9 +117,8 @@ A segunda fase do compilador implementa um analisador sintático recursivo desce
 <material>         ::= KW_NEWMTL IDENTIFICADOR <properties>
 <properties>       ::= <property> <properties> | ε
 <property>         ::= KW_KA <color> | KW_KD <color> | KW_KS <color>
-                     | KW_NS <number> | KW_ILLUM INTEIRO | KW_MAP_KD IDENTIFICADOR
-<color>            ::= <number> <number> <number>
-<number>           ::= INTEIRO | FLOAT
+                     | KW_NS FLOAT | KW_ILLUM INTEIRO | KW_MAP_KD IDENTIFICADOR
+<color>            ::= FLOAT FLOAT FLOAT
 ```
 
 ### Mapeamento entre não-terminais e métodos
@@ -132,11 +131,17 @@ A segunda fase do compilador implementa um analisador sintático recursivo desce
 | `<properties>` | `properties()` |
 | `<property>` | `property()` |
 | `<color>` | `color()` |
-| `<number>` | `number(String)` |
 
 ### Semântica
 
 As propriedades de um material (`Ka`, `Kd`, `Ks`, `Ns`, `illum`, `map_Kd`) podem aparecer em qualquer ordem e ser repetidas, pois o formato MTL não impõe restrições a respeito.
+
+**`FLOAT` estrito nas cores e no expoente.** `Ka`, `Kd`, `Ks` exigem três `FLOAT`
+e `Ns` exige um `FLOAT` — `Kd 1 0 0` é erro sintático, porque o léxico classifica
+`1` como `INTEIRO`. É o que a gramática do enunciado pede
+(`<cor_difusa> ::= KW_KD FLOAT FLOAT FLOAT`). Só `illum` recebe `INTEIRO`, por ser
+um índice de modelo de iluminação. O `samples/cube.mtl` do enunciado já escreve
+todos os valores com ponto decimal, então a exigência não conflita com ele.
 
 ### Iteração em vez de recursão
 

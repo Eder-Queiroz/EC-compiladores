@@ -50,12 +50,23 @@ class ParserTest {
 
     @Test
     void acceptsSeveralMaterials() {
-        assertDoesNotThrow(() -> parse("newmtl um\nKd 1 1 1\nnewmtl dois\nNs 5.0"));
+        assertDoesNotThrow(() -> parse("newmtl um\nKd 1.0 1.0 1.0\nnewmtl dois\nNs 5.0"));
     }
 
     @Test
-    void acceptsIntegerWhereFloatIsExpected() {
-        assertDoesNotThrow(() -> parse("newmtl m\nKd 1 0 0"));
+    void rejectsIntegerWhereFloatIsExpected() {
+        SyntaxException exception = syntaxErrorOf("newmtl m\nKd 1 0 0");
+
+        assertEquals("faltou a componente vermelha da cor (linha 2, coluna 4)",
+                exception.getMessage());
+    }
+
+    @Test
+    void rejectsIntegerForSpecularExponent() {
+        SyntaxException exception = syntaxErrorOf("newmtl m\nNs 10");
+
+        assertEquals("faltou o valor do expoente especular depois de 'Ns' (linha 2, coluna 4)",
+                exception.getMessage());
     }
 
     @Test
@@ -69,7 +80,7 @@ class ParserTest {
 
     @Test
     void rejectsMaterialWithoutName() {
-        SyntaxException exception = syntaxErrorOf("newmtl\nKd 1 1 1");
+        SyntaxException exception = syntaxErrorOf("newmtl\nKd 1.0 1.0 1.0");
 
         assertEquals("faltou o nome do material depois de 'newmtl' (linha 2, coluna 1)",
                 exception.getMessage());
@@ -77,7 +88,7 @@ class ParserTest {
 
     @Test
     void rejectsPropertyBeforeFirstMaterial() {
-        SyntaxException exception = syntaxErrorOf("Kd 1 1 1");
+        SyntaxException exception = syntaxErrorOf("Kd 1.0 1.0 1.0");
 
         assertEquals("esperado o fim do arquivo (linha 1, coluna 1)", exception.getMessage());
     }
