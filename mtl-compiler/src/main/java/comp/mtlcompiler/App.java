@@ -19,9 +19,17 @@ public final class App {
     private static final String TOKENS_OPTION = "--tokens";
 
     public static void main(String[] args) {
-        Path sourceFile = Path.of(args.length > 0 && !TOKENS_OPTION.equals(args[0]) ? args[0] : DEFAULT_SAMPLE);
-        boolean tokensOnly = args.length > 0 && TOKENS_OPTION.equals(args[args.length - 1]);
-        if (args.length == 0) {
+        String fileArgument = null;
+        boolean tokensOnly = false;
+        for (String argument : args) {
+            if (TOKENS_OPTION.equals(argument)) {
+                tokensOnly = true;
+            } else if (fileArgument == null) {
+                fileArgument = argument;
+            }
+        }
+        Path sourceFile = Path.of(fileArgument == null ? DEFAULT_SAMPLE : fileArgument);
+        if (fileArgument == null) {
             System.out.println("Modo de usar: java -jar mtl-compiler.jar <arquivo> [--tokens]");
             System.out.println("Analisando o exemplo padrão: " + DEFAULT_SAMPLE);
             System.out.println();
