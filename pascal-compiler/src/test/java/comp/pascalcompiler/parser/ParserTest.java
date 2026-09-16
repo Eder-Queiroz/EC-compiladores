@@ -195,4 +195,114 @@ class ParserTest {
 
         assertEquals("faltou o nome do parâmetro (linha 1, coluna 42)", exception.getMessage());
     }
+
+    @Test
+    void acceptsIfWithoutElse() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin if (x > 0) then begin y := 1; end; end."));
+    }
+
+    @Test
+    void acceptsIfWithElse() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin if (x = y) then begin y := 1; end else begin y := 2; end; end."));
+    }
+
+    @Test
+    void acceptsAllSixRelationalOperators() {
+        assertDoesNotThrow(() -> parse("""
+                program p;
+                begin
+                    if (a = b) then begin x := 1; end;
+                    if (a > b) then begin x := 1; end;
+                    if (a >= b) then begin x := 1; end;
+                    if (a < b) then begin x := 1; end;
+                    if (a <= b) then begin x := 1; end;
+                    if (a <> b) then begin x := 1; end;
+                end.
+                """));
+    }
+
+    @Test
+    void acceptsLogicalOperators() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin if ((a > b) and (c < d) or not (e = f)) then begin x := 1; end; end."));
+    }
+
+    @Test
+    void acceptsBooleanLiterals() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin if (true) then begin x := 1; end; if (false) then begin x := 2; end; end."));
+    }
+
+    @Test
+    void acceptsWhile() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin while (x < 10) do begin x := x + 1; end; end."));
+    }
+
+    @Test
+    void acceptsRepeat() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin repeat x := x + 1; until (x >= 10); end."));
+    }
+
+    @Test
+    void acceptsNestedControlStructures() {
+        assertDoesNotThrow(() -> parse("""
+                program p;
+                begin
+                    while (a < b) do
+                    begin
+                        if (a > 0) then
+                        begin
+                            repeat a := a + 1; until (a >= b);
+                        end;
+                    end;
+                end.
+                """));
+    }
+
+    @Test
+    void rejectsIfWithoutParenthesis() {
+        SyntaxException exception = syntaxErrorOf("program p; begin if x > 0 then begin y := 1; end; end.");
+
+        assertEquals("faltou '(' depois de 'if' (linha 1, coluna 21)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsIfWithoutThen() {
+        SyntaxException exception = syntaxErrorOf("program p; begin if (x > 0) begin y := 1; end; end.");
+
+        assertEquals("faltou 'then' no 'if' (linha 1, coluna 29)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsWhileWithoutDo() {
+        SyntaxException exception = syntaxErrorOf("program p; begin while (x < 10) begin x := 1; end; end.");
+
+        assertEquals("faltou 'do' no 'while' (linha 1, coluna 33)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsRepeatWithoutUntil() {
+        SyntaxException exception = syntaxErrorOf("program p; begin repeat x := 1; end.");
+
+        assertEquals("faltou 'until' no 'repeat' (linha 1, coluna 33)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsConditionWithoutRelationalOperator() {
+        SyntaxException exception = syntaxErrorOf("program p; begin if (x) then begin y := 1; end; end.");
+
+        assertEquals("esperado um operador relacional (linha 1, coluna 23)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsParenthesizedArithmeticOnTheLeftOfComparison() {
+        SyntaxException exception = syntaxErrorOf(
+                "program p; begin if ((a + b) > c) then begin x := 1; end; end.");
+
+        assertEquals("esperado um operador relacional (linha 1, coluna 28)", exception.getMessage());
+    }
 }

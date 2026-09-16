@@ -154,14 +154,102 @@ public final class Parser {
     }
 
     private void statementsTail() throws CompilationException {
-        if (check(TokenType.ID)) {
+        if (check(TokenType.ID, TokenType.IF, TokenType.WHILE, TokenType.REPEAT)) {
             statements();
         }
     }
 
     private void statement() throws CompilationException {
+        if (accept(TokenType.IF)) {
+            expect(TokenType.LEFT_PAREN, "faltou '(' depois de 'if'");
+            logicalExpression();
+            expect(TokenType.RIGHT_PAREN, "faltou ')' na condição do 'if'");
+            expect(TokenType.THEN, "faltou 'then' no 'if'");
+            expect(TokenType.BEGIN, "faltou 'begin' depois de 'then'");
+            statements();
+            expect(TokenType.END, "faltou 'end' no bloco do 'then'");
+            elsePart();
+            return;
+        }
+        if (accept(TokenType.WHILE)) {
+            expect(TokenType.LEFT_PAREN, "faltou '(' depois de 'while'");
+            logicalExpression();
+            expect(TokenType.RIGHT_PAREN, "faltou ')' na condição do 'while'");
+            expect(TokenType.DO, "faltou 'do' no 'while'");
+            expect(TokenType.BEGIN, "faltou 'begin' no corpo do 'while'");
+            statements();
+            expect(TokenType.END, "faltou 'end' no corpo do 'while'");
+            return;
+        }
+        if (accept(TokenType.REPEAT)) {
+            statements();
+            expect(TokenType.UNTIL, "faltou 'until' no 'repeat'");
+            expect(TokenType.LEFT_PAREN, "faltou '(' depois de 'until'");
+            logicalExpression();
+            expect(TokenType.RIGHT_PAREN, "faltou ')' na condição do 'until'");
+            return;
+        }
         expect(TokenType.ID, "esperado um comando");
         statementTail();
+    }
+
+    private void elsePart() throws CompilationException {
+        if (accept(TokenType.ELSE)) {
+            expect(TokenType.BEGIN, "faltou 'begin' depois de 'else'");
+            statements();
+            expect(TokenType.END, "faltou 'end' no bloco do 'else'");
+        }
+    }
+
+    private void logicalExpression() throws CompilationException {
+        logicalTerm();
+        moreLogicalExpression();
+    }
+
+    private void moreLogicalExpression() throws CompilationException {
+        if (accept(TokenType.OR)) {
+            logicalTerm();
+            moreLogicalExpression();
+        }
+    }
+
+    private void logicalTerm() throws CompilationException {
+        logicalFactor();
+        moreLogicalTerm();
+    }
+
+    private void moreLogicalTerm() throws CompilationException {
+        if (accept(TokenType.AND)) {
+            logicalFactor();
+            moreLogicalTerm();
+        }
+    }
+
+    private void logicalFactor() throws CompilationException {
+        if (accept(TokenType.LEFT_PAREN)) {
+            logicalExpression();
+            expect(TokenType.RIGHT_PAREN, "faltou ')' na expressão lógica");
+            return;
+        }
+        if (accept(TokenType.NOT)) {
+            logicalFactor();
+            return;
+        }
+        if (accept(TokenType.TRUE) || accept(TokenType.FALSE)) {
+            return;
+        }
+        relational();
+    }
+
+    private void relational() throws CompilationException {
+        expression();
+        if (accept(TokenType.EQUAL) || accept(TokenType.GREATER) || accept(TokenType.GREATER_EQUAL)
+                || accept(TokenType.LESS) || accept(TokenType.LESS_EQUAL)
+                || accept(TokenType.NOT_EQUAL)) {
+            expression();
+            return;
+        }
+        throw new SyntaxException("esperado um operador relacional", token.line(), token.column());
     }
 
     private void statementTail() throws CompilationException {
