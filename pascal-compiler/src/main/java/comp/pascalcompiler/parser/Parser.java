@@ -37,9 +37,110 @@ public final class Parser {
     }
 
     private void declarations() throws CompilationException {
+        if (accept(TokenType.VAR)) {
+            variableDeclaration();
+            moreDeclarations();
+        }
+    }
+
+    private void moreDeclarations() throws CompilationException {
+        expect(TokenType.SEMICOLON, "faltou ';' depois da declaração de variáveis");
+        declarationsTail();
+    }
+
+    private void declarationsTail() throws CompilationException {
+        if (check(TokenType.ID)) {
+            variableDeclaration();
+            moreDeclarations();
+        }
+    }
+
+    private void variableDeclaration() throws CompilationException {
+        variables();
+        expect(TokenType.COLON, "faltou ':' antes do tipo da variável");
+        variableType();
+    }
+
+    private void variableType() throws CompilationException {
+        expect(TokenType.INTEGER, "o único tipo aceito é 'integer'");
+    }
+
+    private void variables() throws CompilationException {
+        expect(TokenType.ID, "faltou o nome da variável");
+        moreVariables();
+    }
+
+    private void moreVariables() throws CompilationException {
+        if (accept(TokenType.COMMA)) {
+            variables();
+        }
     }
 
     private void routine() throws CompilationException {
+        if (check(TokenType.PROCEDURE)) {
+            procedureDeclaration();
+            return;
+        }
+        if (check(TokenType.FUNCTION)) {
+            functionDeclaration();
+        }
+    }
+
+    private void procedureDeclaration() throws CompilationException {
+        expect(TokenType.PROCEDURE, "esperado 'procedure'");
+        expect(TokenType.ID, "faltou o nome do procedimento");
+        parameters();
+        expect(TokenType.SEMICOLON, "faltou ';' depois do cabeçalho do procedimento");
+        body();
+        expect(TokenType.SEMICOLON, "faltou ';' depois do corpo do procedimento");
+        routine();
+    }
+
+    private void functionDeclaration() throws CompilationException {
+        expect(TokenType.FUNCTION, "esperado 'function'");
+        expect(TokenType.ID, "faltou o nome da função");
+        parameters();
+        expect(TokenType.COLON, "faltou ':' antes do tipo de retorno da função");
+        functionType();
+        expect(TokenType.SEMICOLON, "faltou ';' depois do cabeçalho da função");
+        body();
+        expect(TokenType.SEMICOLON, "faltou ';' depois do corpo da função");
+        routine();
+    }
+
+    private void functionType() throws CompilationException {
+        expect(TokenType.INTEGER, "o único tipo de retorno aceito é 'integer'");
+    }
+
+    private void parameters() throws CompilationException {
+        if (accept(TokenType.LEFT_PAREN)) {
+            parameterList();
+            expect(TokenType.RIGHT_PAREN, "faltou ')' na lista de parâmetros");
+        }
+    }
+
+    private void parameterList() throws CompilationException {
+        identifierList();
+        expect(TokenType.COLON, "faltou ':' antes do tipo do parâmetro");
+        variableType();
+        parameterListTail();
+    }
+
+    private void parameterListTail() throws CompilationException {
+        if (accept(TokenType.SEMICOLON)) {
+            parameterList();
+        }
+    }
+
+    private void identifierList() throws CompilationException {
+        expect(TokenType.ID, "faltou o nome do parâmetro");
+        identifierListTail();
+    }
+
+    private void identifierListTail() throws CompilationException {
+        if (accept(TokenType.COMMA)) {
+            identifierList();
+        }
     }
 
     private void statements() throws CompilationException {

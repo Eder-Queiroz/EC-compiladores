@@ -108,4 +108,91 @@ class ParserTest {
 
         assertEquals("esperado o fim do arquivo (linha 1, coluna 31)", exception.getMessage());
     }
+
+    @Test
+    void acceptsSingleVariableDeclaration() {
+        assertDoesNotThrow(() -> parse("program p; var x : integer; begin x := 1; end."));
+    }
+
+    @Test
+    void acceptsSeveralVariablesInOneDeclaration() {
+        assertDoesNotThrow(() -> parse("program p; var x, y, z : integer; begin x := 1; end."));
+    }
+
+    @Test
+    void acceptsSeveralDeclarationLines() {
+        assertDoesNotThrow(() -> parse(
+                "program p; var x : integer; y, z : integer; begin x := 1; end."));
+    }
+
+    @Test
+    void acceptsProcedureWithoutParameters() {
+        assertDoesNotThrow(() -> parse(
+                "program p; procedure mostra; begin x := 1; end; begin mostra; end."));
+    }
+
+    @Test
+    void acceptsProcedureWithParameters() {
+        assertDoesNotThrow(() -> parse(
+                "program p; procedure mostra(a, b : integer; c : integer); begin x := a; end; begin mostra(1, 2, 3); end."));
+    }
+
+    @Test
+    void acceptsFunctionWithParameters() {
+        assertDoesNotThrow(() -> parse(
+                "program p; function dobro(n : integer) : integer; begin dobro := n * 2; end; begin x := dobro(2); end."));
+    }
+
+    @Test
+    void acceptsRoutineWithItsOwnDeclarations() {
+        assertDoesNotThrow(() -> parse(
+                "program p; function dobro(n : integer) : integer; var aux : integer; begin aux := n * 2; end; begin x := dobro(2); end."));
+    }
+
+    @Test
+    void rejectsUnknownVariableType() {
+        SyntaxException exception = syntaxErrorOf("program p; var x : real; begin x := 1; end.");
+
+        assertEquals("o único tipo aceito é 'integer' (linha 1, coluna 20)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsMissingColonInDeclaration() {
+        SyntaxException exception = syntaxErrorOf("program p; var x integer; begin x := 1; end.");
+
+        assertEquals("faltou ':' antes do tipo da variável (linha 1, coluna 18)",
+                exception.getMessage());
+    }
+
+    @Test
+    void rejectsMissingSemicolonAfterDeclaration() {
+        SyntaxException exception = syntaxErrorOf("program p; var x : integer begin x := 1; end.");
+
+        assertEquals("faltou ';' depois da declaração de variáveis (linha 1, coluna 28)",
+                exception.getMessage());
+    }
+
+    @Test
+    void rejectsProcedureWithoutName() {
+        SyntaxException exception = syntaxErrorOf("program p; procedure ; begin x := 1; end; begin x := 1; end.");
+
+        assertEquals("faltou o nome do procedimento (linha 1, coluna 22)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsFunctionWithoutReturnType() {
+        SyntaxException exception = syntaxErrorOf(
+                "program p; function dobro(n : integer); begin dobro := 1; end; begin x := 1; end.");
+
+        assertEquals("faltou ':' antes do tipo de retorno da função (linha 1, coluna 39)",
+                exception.getMessage());
+    }
+
+    @Test
+    void rejectsUnclosedParameterList() {
+        SyntaxException exception = syntaxErrorOf(
+                "program p; procedure mostra(a : integer; begin x := 1; end; begin x := 1; end.");
+
+        assertEquals("faltou o nome do parâmetro (linha 1, coluna 42)", exception.getMessage());
+    }
 }
