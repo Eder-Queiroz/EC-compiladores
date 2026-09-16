@@ -1,8 +1,9 @@
-# Analisador Léxico — Pascal Simplificado
+# Compilador Pascal Simplificado
 
 Reconhece os itens léxicos da linguagem Pascal Simplificada definida pela BNF da
 disciplina. É a primeira fase do compilador: a sequência de tokens produzida aqui
-é o que o analisador sintático vai consumir depois.
+é o que o analisador sintático consome, validando a estrutura do programa
+segundo a gramática da linguagem.
 
 ## Tokens
 
@@ -67,8 +68,9 @@ E `EOF` para o fim do arquivo. São **45 classes** no total.
   `(a)` produz três tokens e `(* a *)` não produz nenhum.
 - **Aspa dentro de cadeia.** Duas aspas simples seguidas representam uma aspa
   literal: `'nao e''facil'` produz um único `STRING` com o valor `nao e'facil`.
-- **Comentários** nas duas formas, `{ ... }` e `(* ... *)`, podendo atravessar
-  linhas. Comentário não fechado é erro léxico, reportado na posição de abertura.
+- **Comentários** em três formas: `{ ... }` e `(* ... *)`, que podem atravessar
+  linhas, e `// ...`, que vai até o fim da linha. Comentário de bloco não
+  fechado é erro léxico, reportado na posição de abertura.
 - Um identificador não pode começar com dígito: `1a` produz `INTNUM` seguido de
   `ID`, e não um único token.
 
@@ -102,7 +104,15 @@ Token [2, 1, classe=VAR, valor=Var]
 Token [2, 5, classe=ID, valor=termo1]
 Token [2, 11, classe=COMMA, valor=,]
 Token [2, 13, classe=ID, valor=termo2]
+Token [2, 19, classe=COMMA, valor=,]
+Token [2, 21, classe=ID, valor=aux]
+Token [2, 24, classe=COMMA, valor=,]
+Token [2, 26, classe=ID, valor=cont]
+Token [2, 30, classe=COMMA, valor=,]
+Token [2, 32, classe=ID, valor=quantos]
 Token [2, 40, classe=COLON, valor=:]
+Token [2, 42, classe=INTEGER, valor=Integer]
+Token [2, 49, classe=SEMICOLON, valor=;]
 ```
 
 Atribuição, relacional e cadeia:
@@ -149,7 +159,10 @@ saída 1. Um arquivo válido encerra com 0.
 | `lexer/Token` | classe, valor e posição |
 | `lexer/Lexer` | o autômato: comentários, palavras reservadas, identificadores, inteiros, cadeias e símbolos |
 | `lexer/LexicalException` | erro léxico com posição |
-| `App` | linha de comando |
+| `CompilationException` | superclasse abstrata dos erros de compilação, guarda linha e coluna |
+| `parser/Parser` | analisador sintático recursivo descendente |
+| `parser/SyntaxException` | erro sintático com posição |
+| `App` | linha de comando: analisa por padrão, lista os tokens com `--tokens` |
 
 O analisador é escrito à mão, sem expressões regulares e sem gerador léxico.
 
@@ -333,7 +346,7 @@ não escondido:
    ```bash
    java -jar target/pascal-compiler.jar samples/teste.pas --tokens
    ```
-   Analisa e lista todos os tokens do arquivo.
+   Lista todos os tokens do arquivo sem realizar análise sintática.
 
 ### Saída real dos quatro comandos
 

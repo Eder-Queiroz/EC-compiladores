@@ -138,6 +138,18 @@ A segunda fase do compilador implementa um analisador sintático recursivo desce
 
 As propriedades de um material (`Ka`, `Kd`, `Ks`, `Ns`, `illum`, `map_Kd`) podem aparecer em qualquer ordem e ser repetidas, pois o formato MTL não impõe restrições a respeito.
 
+### Iteração em vez de recursão
+
+A gramática acima escreve `<materials>` e `<properties>` como recursão à
+direita, mas `materials()` e `properties()` são implementados com laços
+`while`, não com chamada recursiva a si mesmos. Um arquivo `.mtl` pode
+declarar um número arbitrário de materiais e propriedades, e recursão própria
+consumiria um quadro de pilha por repetição — um `StackOverflowError` certo
+em uma biblioteca de materiais grande. O laço aceita exatamente a mesma
+linguagem, já que iteração é a transformação padrão de uma recursão de
+cauda. O analisador de Pascal faz o oposto de propósito: lá a repetição
+segue a estrutura do programa, então a recursão própria é natural.
+
 ### Modos de execução
 
 **Modo análise sintática (padrão):**

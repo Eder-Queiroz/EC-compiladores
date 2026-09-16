@@ -1,4 +1,4 @@
-# Analisador Léxico — PPM (Portable Pixmap)
+# Compilador PPM (Portable Pixmap)
 
 Reconhece os itens léxicos de imagens PPM em modo ASCII (`P3`), onde a imagem é
 literalmente um arquivo de texto estruturado.
@@ -44,8 +44,16 @@ Sem argumento, o programa imprime o modo de usar e analisa `samples/sample.ppm`.
 
 ## Saída
 
-Um token por linha, no formato `Token [linha, coluna, classe, valor]`. A posição
-é a do primeiro caractere do lexema. Tokens sem atributo (`EOF`) omitem o valor.
+O modo padrão (análise sintática) imprime uma linha de sucesso ou o erro
+encontrado:
+
+```
+Análise sintática concluída sem erros: samples/sample.ppm
+```
+
+Com `--tokens`, o programa lista um token por linha, no formato
+`Token [linha, coluna, classe, valor]`. A posição é a do primeiro caractere do
+lexema. Tokens sem atributo (`EOF`) omitem o valor.
 
 ```
 Token [1, 1, classe=MAGIC, valor=P3]
@@ -94,7 +102,10 @@ Erro léxico: caractere inválido '@' (linha 2, coluna 1)
 | `lexer/Token` | classe, valor e posição |
 | `lexer/Lexer` | o autômato: descarta separadores e comentários e reconhece os lexemas |
 | `lexer/LexicalException` | erro léxico com posição |
-| `App` | linha de comando: imprime os tokens e traduz erro em código de saída |
+| `CompilationException` | superclasse abstrata dos erros de compilação, guarda linha e coluna |
+| `parser/Parser` | analisador sintático recursivo descendente |
+| `parser/SyntaxException` | erro sintático com posição |
+| `App` | linha de comando: analisa por padrão, lista os tokens com `--tokens` |
 
 O analisador é escrito à mão, sem expressões regulares e sem gerador léxico.
 
@@ -123,6 +134,19 @@ Analisa a estrutura de imagens PPM usando um analisador sintático descendente r
 | `<pixel>` | `pixel()` |
 
 **Nota:** A validação de contagem de pixels contra largura × altura é análise semântica e fica fora do escopo do analisador sintático.
+
+### Iteração em vez de recursão
+
+A gramática acima escreve `<pixels> ::= <pixel> <pixels> | ε` como recursão à
+direita, mas `pixels()` é implementado com um laço `while`, não com uma
+chamada recursiva a si mesmo. Uma imagem PPM pode ter milhões de pixels, e
+recursão própria consumiria um quadro de pilha por repetição — um
+`StackOverflowError` certo em qualquer imagem grande. O laço aceita
+exatamente a mesma linguagem, já que iteração é a transformação padrão de uma
+recursão de cauda. O analisador de Pascal faz o oposto de propósito: lá a
+repetição segue a estrutura do programa (poucas declarações, poucos
+comandos), então a recursão própria é natural e não corre risco de estourar
+a pilha.
 
 ### Execução
 

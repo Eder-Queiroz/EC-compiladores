@@ -1,4 +1,4 @@
-# Analisador Léxico — OBJ (Wavefront)
+# Compilador OBJ (Wavefront)
 
 Reconhece os itens léxicos de arquivos `.obj` em sua versão texto/ASCII, o
 formato de objeto 3D mais simples de se trabalhar. O `.obj` não guarda a imagem
@@ -60,7 +60,15 @@ Sem argumento, o programa imprime o modo de usar e analisa `samples/cube.obj`.
 
 ## Saída
 
-O `samples/cube.obj` produz **297 tokens**. As linhas 1 a 15 são comentários e
+O modo padrão (análise sintática) imprime uma linha de sucesso ou o erro
+encontrado:
+
+```
+Análise sintática concluída sem erros: samples/cube.obj
+```
+
+Com `--tokens`, o programa lista todos os tokens do arquivo, um por linha. O
+`samples/cube.obj` produz **297 tokens**. As linhas 1 a 15 são comentários e
 não geram nenhum token — o primeiro token está na linha 16.
 
 ```
@@ -133,7 +141,10 @@ saída 1.
 | `lexer/Token` | classe, valor e posição |
 | `lexer/Lexer` | o autômato: separadores, comentários, palavras reservadas, números e barra |
 | `lexer/LexicalException` | erro léxico com posição |
-| `App` | linha de comando |
+| `CompilationException` | superclasse abstrata dos erros de compilação, guarda linha e coluna |
+| `parser/Parser` | analisador sintático recursivo descendente |
+| `parser/SyntaxException` | erro sintático com posição |
+| `App` | linha de comando: analisa por padrão, lista os tokens com `--tokens` |
 
 O analisador é escrito à mão, sem expressões regulares e sem gerador léxico.
 
@@ -170,7 +181,7 @@ Gramática do analisador recursivo-descendente:
 | `<references>` | `references()` |
 | `<texture_reference>` | `textureReference()` |
 | `<normal_reference>` | `normalReference()` |
-| `<number>` | `number()` |
+| `<number>` | `number(String)` |
 
 ### Formas de referência de vértice
 
@@ -188,6 +199,18 @@ Faces em OBJ aceitam quatro formas de referência de vértice:
 - Vértices com quarto componente (forma `v x y z w`) não são aceitos.
 - Coordenadas de textura com terceiro componente (forma `vt u v w`) não são aceitas.
 
+### Iteração em vez de recursão
+
+A gramática acima escreve `<commands>` e `<more_vertices>` como recursão à
+direita, mas `commands()` e `moreVertices()` são implementados com laços
+`while`, não com chamada recursiva a si mesmos. Um modelo `.obj` pode ter
+milhares de comandos (vértices, normais, coordenadas de textura, faces), e
+recursão própria consumiria um quadro de pilha por repetição — um
+`StackOverflowError` certo em qualquer modelo grande. O laço aceita
+exatamente a mesma linguagem, já que iteração é a transformação padrão de uma
+recursão de cauda. O analisador de Pascal faz o oposto de propósito: lá a
+repetição segue a estrutura do programa, então a recursão própria é natural.
+
 ### Modos de execução
 
 1. **Análise sintática completa** (padrão):
@@ -200,7 +223,7 @@ Faces em OBJ aceitam quatro formas de referência de vértice:
    ```bash
    java -jar target/obj-compiler.jar samples/cube.obj --tokens
    ```
-   Analisa e lista todos os tokens do arquivo.
+   Lista todos os tokens do arquivo sem realizar análise sintática.
 
 ### Saída
 
