@@ -37,6 +37,11 @@ public final class Parser {
     }
 
     private void pixels() throws CompilationException {
+        pixel();
+        morePixels();
+    }
+
+    private void morePixels() throws CompilationException {
         while (check(TokenType.NUMERO)) {
             pixel();
         }

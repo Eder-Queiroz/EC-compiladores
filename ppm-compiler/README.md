@@ -119,7 +119,8 @@ Analisa a estrutura de imagens PPM usando um analisador sintático descendente r
 <image>         ::= MAGIC <dimensions> <maximum_color> <pixels>
 <dimensions>    ::= NUMERO NUMERO
 <maximum_color> ::= NUMERO
-<pixels>        ::= <pixel> <pixels> | ε
+<pixels>        ::= <pixel> <more_pixels>
+<more_pixels>   ::= <pixel> <more_pixels> | ε
 <pixel>         ::= NUMERO NUMERO NUMERO
 ```
 
@@ -131,14 +132,20 @@ Analisa a estrutura de imagens PPM usando um analisador sintático descendente r
 | `<dimensions>` | `dimensions()` |
 | `<maximum_color>` | `maximumColor()` |
 | `<pixels>` | `pixels()` |
+| `<more_pixels>` | `morePixels()` |
 | `<pixel>` | `pixel()` |
+
+**Ao menos um pixel.** `<pixels> ::= <pixel> <more_pixels>` exige que a imagem
+tenha pelo menos um pixel — um arquivo com apenas o cabeçalho, como `P3 0 0 255`,
+é erro sintático. Isso segue a gramática do enunciado, cujo
+`<lista_pixels> ::= <pixel> <mais_pixels>` tem a mesma exigência.
 
 **Nota:** A validação de contagem de pixels contra largura × altura é análise semântica e fica fora do escopo do analisador sintático.
 
 ### Iteração em vez de recursão
 
-A gramática acima escreve `<pixels> ::= <pixel> <pixels> | ε` como recursão à
-direita, mas `pixels()` é implementado com um laço `while`, não com uma
+A gramática acima escreve `<more_pixels> ::= <pixel> <more_pixels> | ε` como recursão à
+direita, mas `morePixels()` é implementado com um laço `while`, não com uma
 chamada recursiva a si mesmo. Uma imagem PPM pode ter milhões de pixels, e
 recursão própria consumiria um quadro de pilha por repetição — um
 `StackOverflowError` certo em qualquer imagem grande. O laço aceita

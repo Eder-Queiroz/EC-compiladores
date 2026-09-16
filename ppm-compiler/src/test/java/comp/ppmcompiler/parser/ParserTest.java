@@ -31,8 +31,11 @@ class ParserTest {
     }
 
     @Test
-    void acceptsImageWithoutPixels() {
-        assertDoesNotThrow(() -> parse("P3 0 0 255"));
+    void rejectsImageWithoutPixels() {
+        SyntaxException exception = syntaxErrorOf("P3 0 0 255");
+
+        assertEquals("faltou a componente vermelha do pixel (linha 1, coluna 11)",
+                exception.getMessage());
     }
 
     @Test
