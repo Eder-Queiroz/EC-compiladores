@@ -154,7 +154,8 @@ public final class Parser {
     }
 
     private void statementsTail() throws CompilationException {
-        if (check(TokenType.ID, TokenType.IF, TokenType.WHILE, TokenType.REPEAT)) {
+        if (check(TokenType.ID, TokenType.IF, TokenType.WHILE, TokenType.REPEAT,
+                TokenType.READ, TokenType.WRITE, TokenType.WRITELN, TokenType.FOR)) {
             statements();
         }
     }
@@ -187,6 +188,30 @@ public final class Parser {
             expect(TokenType.LEFT_PAREN, "faltou '(' depois de 'until'");
             logicalExpression();
             expect(TokenType.RIGHT_PAREN, "faltou ')' na condição do 'until'");
+            return;
+        }
+        if (accept(TokenType.READ)) {
+            expect(TokenType.LEFT_PAREN, "faltou '(' depois de 'read'");
+            readArguments();
+            expect(TokenType.RIGHT_PAREN, "faltou ')' no comando 'read'");
+            return;
+        }
+        if (accept(TokenType.WRITE) || accept(TokenType.WRITELN)) {
+            expect(TokenType.LEFT_PAREN, "faltou '(' no comando de escrita");
+            writeArguments();
+            expect(TokenType.RIGHT_PAREN, "faltou ')' no comando de escrita");
+            return;
+        }
+        if (accept(TokenType.FOR)) {
+            expect(TokenType.ID, "faltou a variável de controle do 'for'");
+            expect(TokenType.ASSIGN, "faltou ':=' no 'for'");
+            expression();
+            expect(TokenType.TO, "faltou 'to' no 'for'");
+            expression();
+            expect(TokenType.DO, "faltou 'do' no 'for'");
+            expect(TokenType.BEGIN, "faltou 'begin' no corpo do 'for'");
+            statements();
+            expect(TokenType.END, "faltou 'end' no corpo do 'for'");
             return;
         }
         expect(TokenType.ID, "esperado um comando");
@@ -313,6 +338,32 @@ public final class Parser {
         expect(TokenType.LEFT_PAREN, "esperado identificador, número ou '(' na expressão");
         expression();
         expect(TokenType.RIGHT_PAREN, "faltou ')' na expressão");
+    }
+
+    private void readArguments() throws CompilationException {
+        expect(TokenType.ID, "faltou a variável no comando 'read'");
+        moreReadArguments();
+    }
+
+    private void moreReadArguments() throws CompilationException {
+        if (accept(TokenType.COMMA)) {
+            readArguments();
+        }
+    }
+
+    private void writeArguments() throws CompilationException {
+        if (accept(TokenType.ID) || accept(TokenType.STRING) || accept(TokenType.INTNUM)) {
+            moreWriteArguments();
+            return;
+        }
+        throw new SyntaxException("esperado identificador, cadeia ou número no comando de escrita",
+                token.line(), token.column());
+    }
+
+    private void moreWriteArguments() throws CompilationException {
+        if (accept(TokenType.COMMA)) {
+            writeArguments();
+        }
     }
 
     private void advance() throws CompilationException {

@@ -4,7 +4,12 @@ import comp.pascalcompiler.CompilationException;
 import comp.pascalcompiler.lexer.Lexer;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -304,5 +309,89 @@ class ParserTest {
                 "program p; begin if ((a + b) > c) then begin x := 1; end; end.");
 
         assertEquals("esperado um operador relacional (linha 1, coluna 28)", exception.getMessage());
+    }
+
+    @Test
+    void acceptsRead() {
+        assertDoesNotThrow(() -> parse("program p; begin read(x); read(a, b, c); end."));
+    }
+
+    @Test
+    void acceptsWriteWithEachArgumentKind() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin write(x); write('texto'); write(42); write(x, 'texto', 42); end."));
+    }
+
+    @Test
+    void acceptsWriteln() {
+        assertDoesNotThrow(() -> parse("program p; begin writeln('resultado: ', x); end."));
+    }
+
+    @Test
+    void acceptsFor() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin for i := 1 to 10 do begin x := x + i; end; end."));
+    }
+
+    @Test
+    void acceptsForWithExpressionBounds() {
+        assertDoesNotThrow(() -> parse(
+                "program p; begin for i := a + 1 to b * 2 do begin x := i; end; end."));
+    }
+
+    @Test
+    void rejectsReadWithoutParenthesis() {
+        SyntaxException exception = syntaxErrorOf("program p; begin read x; end.");
+
+        assertEquals("faltou '(' depois de 'read' (linha 1, coluna 23)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsReadWithLiteral() {
+        SyntaxException exception = syntaxErrorOf("program p; begin read(42); end.");
+
+        assertEquals("faltou a variável no comando 'read' (linha 1, coluna 23)",
+                exception.getMessage());
+    }
+
+    @Test
+    void rejectsWriteWithExpression() {
+        SyntaxException exception = syntaxErrorOf("program p; begin write(x + 1); end.");
+
+        assertEquals("faltou ')' no comando de escrita (linha 1, coluna 26)",
+                exception.getMessage());
+    }
+
+    @Test
+    void rejectsWriteWithoutArgument() {
+        SyntaxException exception = syntaxErrorOf("program p; begin write(); end.");
+
+        assertEquals("esperado identificador, cadeia ou número no comando de escrita (linha 1, coluna 24)",
+                exception.getMessage());
+    }
+
+    @Test
+    void rejectsForWithoutTo() {
+        SyntaxException exception = syntaxErrorOf(
+                "program p; begin for i := 1 do begin x := 1; end; end.");
+
+        assertEquals("faltou 'to' no 'for' (linha 1, coluna 29)", exception.getMessage());
+    }
+
+    @Test
+    void rejectsForWithoutAssignment() {
+        SyntaxException exception = syntaxErrorOf(
+                "program p; begin for i = 1 to 10 do begin x := 1; end; end.");
+
+        assertEquals("faltou ':=' no 'for' (linha 1, coluna 24)", exception.getMessage());
+    }
+
+    @Test
+    void acceptsFibonacciSample() throws IOException {
+        Path sample = Path.of("samples/teste.pas");
+        try (Reader source = Files.newBufferedReader(sample, StandardCharsets.UTF_8)) {
+            Parser parser = new Parser(new Lexer(source));
+            assertDoesNotThrow(parser::parse);
+        }
     }
 }
