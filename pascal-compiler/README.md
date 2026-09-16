@@ -88,42 +88,44 @@ Sem argumento, o programa imprime o modo de usar e analisa `samples/teste.pas`.
 
 ## Saída
 
-O `samples/teste.pas` foi escrito para exercitar **as 45 classes** e produz 188
-tokens. As linhas de comentário (2 e 32) não geram nenhum token.
+O `samples/teste.pas` é o programa Fibonacci: lê quantos termos (`quantos`) o
+usuário quer ver e calcula a sequência com `termo1`, `termo2`, `aux` e `cont`.
+Ele não tem comentários nem declara sub-rotinas. Produz **100 tokens** e cobre
+23 das 45 classes — não usa, por exemplo, `PROCEDURE`, `FUNCTION`, `FOR`,
+`GREATER`, `GREATER_EQUAL`, `NOT_EQUAL` ou `LESS_EQUAL`.
 
 ```
-Token [1, 1, classe=PROGRAM, valor=program]
-Token [1, 9, classe=ID, valor=exemplo]
-Token [1, 16, classe=SEMICOLON, valor=;]
-Token [3, 1, classe=VAR, valor=var]
-Token [4, 3, classe=ID, valor=x]
-Token [4, 4, classe=COMMA, valor=,]
-Token [4, 6, classe=ID, valor=y]
-Token [4, 8, classe=COLON, valor=:]
+Token [1, 1, classe=PROGRAM, valor=Program]
+Token [1, 9, classe=ID, valor=Fibonacci]
+Token [1, 18, classe=SEMICOLON, valor=;]
+Token [2, 1, classe=VAR, valor=Var]
+Token [2, 5, classe=ID, valor=termo1]
+Token [2, 11, classe=COMMA, valor=,]
+Token [2, 13, classe=ID, valor=termo2]
+Token [2, 40, classe=COLON, valor=:]
 ```
 
-Atribuição, relacionais e cadeia:
+Atribuição, relacional e cadeia:
 
 ```
-Token [9, 9, classe=ASSIGN, valor=:=]
-Token [31, 16, classe=GREATER_EQUAL, valor=>=]
-Token [37, 25, classe=NOT_EQUAL, valor=<>]
-Token [45, 9, classe=LESS_EQUAL, valor=<=]
-Token [14, 11, classe=STRING, valor=valores lidos: ]
+Token [5, 12, classe=ASSIGN, valor=:=]
+Token [14, 17, classe=LESS, valor=<]
+Token [4, 13, classe=STRING, valor=----------FIBONACCI------------]
 ```
 
 Fim do programa:
 
 ```
-Token [53, 1, classe=END, valor=end]
-Token [53, 4, classe=DOT, valor=.]
-Token [54, 1, classe=EOF]
+Token [21, 5, classe=END, valor=end]
+Token [22, 1, classe=END, valor=End]
+Token [22, 4, classe=DOT, valor=.]
+Token [23, 1, classe=EOF]
 ```
 
-Para conferir que o exemplo cobre todas as classes:
+Para contar quantas classes distintas o exemplo cobre:
 
 ```bash
-java -jar target/pascal-compiler.jar samples/teste.pas | grep -oE 'classe=[A-Z_]+' | sort -u | wc -l
+java -jar target/pascal-compiler.jar samples/teste.pas --tokens | grep -oE 'classe=[A-Z_]+' | sort -u | wc -l
 ```
 
 ## Erros
@@ -175,7 +177,8 @@ abaixo:
 <cont_lista_par>     ::= ; <lista_parametros> | ε
 <lista_id>           ::= id <cont_lista_id>
 <cont_lista_id>      ::= , <lista_id> | ε
-<sentencas>          ::= <comando> ; <cont_sentencas>
+<sentencas>          ::= <comando> <mais_sentencas>
+<mais_sentencas>     ::= ; <cont_sentencas>
 <cont_sentencas>     ::= <sentencas> | ε
 <comando>            ::= if ( <expressao_logica> ) then begin <sentencas> end <pfalsa>
                        | while ( <expressao_logica> ) do begin <sentencas> end
@@ -307,11 +310,11 @@ não escondido:
 ### Duas observações da gramática
 
 - **Todo comando termina com `;`, inclusive o último antes de `end`.**
-  `<sentencas> ::= <comando> ; <cont_sentencas>` sempre exige o `;` depois do
-  comando — `moreStatements()` chama `expect(SEMICOLON, ...)`
-  incondicionalmente, e só depois verifica (`statementsTail()`) se há mais um
-  comando. Isso é diferente do Pascal padrão, onde o `;` antes de `end` é
-  opcional.
+  `<mais_sentencas> ::= ; <cont_sentencas>` não tem alternativa `ε`, então o
+  `;` depois do comando é obrigatório — `moreStatements()` chama
+  `expect(SEMICOLON, ...)` incondicionalmente, e só depois verifica
+  (`statementsTail()`) se há mais um comando. Isso é diferente do Pascal
+  padrão, onde o `;` antes de `end` é opcional.
 - **`<exp_write>` aceita `id`, `string` ou `intnum`, não uma expressão
   completa.** `writeArguments()` chama `accept(ID)`, `accept(STRING)` ou
   `accept(INTNUM)` diretamente, sem passar por `expression()`. Por isso

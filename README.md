@@ -101,10 +101,13 @@ têm literais decimais. `TokenType`, `Lexer` e `Parser` são específicos de cad
 formato.
 
 `LexicalException` e `SyntaxException` estendem `CompilationException`, que
-guarda linha e coluna e monta a mensagem final. `Parser.parse()` é o único
-método que declara `throws CompilationException` — é o ponto em que o `App`
-não sabe se o erro que pode chegar é léxico (propagado pelo `Lexer` durante a
-análise sintática) ou sintático, e por isso captura os dois tipos concretos
+guarda linha e coluna e monta a mensagem final. É por isso que existe uma
+classe base: todo método do `Parser` declara `throws CompilationException` em
+vez de `throws LexicalException, SyntaxException` — no Pascal, por exemplo,
+são 46 métodos com `throws`, e sem `CompilationException` cada um deles
+listaria as duas subclasses. Mesmo assim, o `App` não sabe, só pela
+assinatura, se o erro que pode chegar é léxico (propagado pelo `Lexer` durante
+a análise sintática) ou sintático, e por isso captura os dois tipos concretos
 antes do tipo base.
 
 ## Saída
