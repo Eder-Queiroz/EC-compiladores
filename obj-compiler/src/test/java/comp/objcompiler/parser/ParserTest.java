@@ -41,8 +41,11 @@ class ParserTest {
     }
 
     @Test
-    void acceptsIntegerWhereFloatIsExpected() {
-        assertDoesNotThrow(() -> parse("vt 0 0.75"));
+    void rejectsIntegerWhereFloatIsExpected() {
+        SyntaxException exception = syntaxErrorOf("vt 0 0.75");
+
+        assertEquals("faltou a coordenada u da textura (linha 1, coluna 4)",
+                exception.getMessage());
     }
 
     @Test
@@ -66,8 +69,10 @@ class ParserTest {
     }
 
     @Test
-    void acceptsFaceWithMoreThanThreeVertices() {
-        assertDoesNotThrow(() -> parse("f 1/1/1 2/2/2 3/3/3 4/4/4"));
+    void rejectsFaceWithMoreThanThreeVertices() {
+        SyntaxException exception = syntaxErrorOf("f 1/1/1 2/2/2 3/3/3 4/4/4");
+
+        assertEquals("esperado o fim do arquivo (linha 1, coluna 21)", exception.getMessage());
     }
 
     @Test

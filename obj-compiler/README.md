@@ -32,7 +32,9 @@ arquivo `.mtl` via `mtllib`, que por sua vez aponta a imagem.
 - **Sinal negativo** só aparece em `FLOAT` (`vn -1.0 0.0 0.0`). Índices de face e
   valores de textura são positivos.
 - **`FLOAT` vs `INTEIRO`:** o ponto decide. Em `vt 0 0.75`, o `0` é `INTEIRO` e o
-  `0.75` é `FLOAT`.
+  `0.75` é `FLOAT`. Esta é a classificação do léxico; o analisador sintático exige
+  `FLOAT` nas coordenadas, então essa linha é aceita pelo léxico e rejeitada pelo
+  sintático — veja a seção sobre o ajuste no exemplo do enunciado.
 - **Normalização do valor decimal.** O lexema `1.00` produz `valor=1.0`. O token
   carrega o *valor* numérico convertido, não a cadeia bruta — é o atributo do
   token que a apostila descreve ao lado da classe.
@@ -91,11 +93,12 @@ Token [33, 10, classe=FLOAT, valor=0.0]
 Token [33, 15, classe=FLOAT, valor=0.0]
 ```
 
-Coordenada de textura misturando inteiro e decimal (linha 43, `vt 0    0.75`):
+Coordenada de textura (linha 43, `vt 0.0  0.75` — veja a seção sobre o ajuste no
+exemplo do enunciado):
 
 ```
 Token [43, 1, classe=KW_VT, valor=vt]
-Token [43, 4, classe=INTEIRO, valor=0]
+Token [43, 4, classe=FLOAT, valor=0.0]
 Token [43, 9, classe=FLOAT, valor=0.75]
 ```
 
@@ -157,16 +160,14 @@ Gramática do analisador recursivo-descendente:
 <commands>          ::= <command> <commands> | ε
 <command>           ::= KW_MTLLIB IDENTIFICADOR | KW_USEMTL IDENTIFICADOR
                       | KW_G IDENTIFICADOR | KW_O IDENTIFICADOR
-                      | KW_V <number> <number> <number>
-                      | KW_VN <number> <number> <number>
-                      | KW_VT <number> <number>
-                      | KW_F <vertex> <vertex> <vertex> <more_vertices>
-<more_vertices>     ::= <vertex> <more_vertices> | ε
+                      | KW_V FLOAT FLOAT FLOAT
+                      | KW_VN FLOAT FLOAT FLOAT
+                      | KW_VT FLOAT FLOAT
+                      | KW_F <vertex> <vertex> <vertex>
 <vertex>            ::= INTEIRO <references>
 <references>        ::= BARRA <texture_reference> | ε
 <texture_reference> ::= INTEIRO <normal_reference> | BARRA INTEIRO
 <normal_reference>  ::= BARRA INTEIRO | ε
-<number>            ::= INTEIRO | FLOAT
 ```
 
 ### Mapeamento de não-terminais para métodos
@@ -176,12 +177,10 @@ Gramática do analisador recursivo-descendente:
 | `<model>` | `model()` |
 | `<commands>` | `commands()` |
 | `<command>` | `command()` |
-| `<more_vertices>` | `moreVertices()` |
 | `<vertex>` | `vertex()` |
 | `<references>` | `references()` |
 | `<texture_reference>` | `textureReference()` |
 | `<normal_reference>` | `normalReference()` |
-| `<number>` | `number(String)` |
 
 ### Formas de referência de vértice
 
@@ -199,9 +198,43 @@ Faces em OBJ aceitam quatro formas de referência de vértice:
 - Vértices com quarto componente (forma `v x y z w`) não são aceitos.
 - Coordenadas de textura com terceiro componente (forma `vt u v w`) não são aceitas.
 
+### O exemplo do enunciado precisou de um ajuste
+
+A gramática do enunciado escreve `<def_uv> ::= KW_VT FLOAT FLOAT`, exigindo dois
+`FLOAT`. Mas o `cube.obj` que acompanha o mesmo enunciado tem quatro linhas `vt`
+com componente inteira:
+
+```
+43: vt 0    0.75  # 3  f(2)
+47: vt 0    0.50  # 7  b(2)
+53: vt 0.25 0     # 13 f(3)
+54: vt 0.50 0     # 14 g(3)
+```
+
+Pelo léxico especificado na fase anterior, `0` é classificado como `INTEIRO`, não
+como `FLOAT`. Ou seja: **a gramática do enunciado não deriva o exemplo do
+enunciado.** As quatro linhas são o único ponto de conflito — todas as demais
+coordenadas já vêm escritas com ponto decimal.
+
+Optamos por seguir a gramática e ajustar o exemplo: no `samples/cube.obj` deste
+projeto, essas quatro linhas trazem `0.0` no lugar de `0`. O analisador rejeita
+`vt 0 0.75`, como a gramática manda.
+
+A alternativa seria relaxar a gramática para `<numero> ::= INTEIRO | FLOAT` nas
+produções `<def_vertice>`, `<def_uv>` e `<def_normal>`, aceitando o exemplo como
+está. É uma decisão do professor, e vale confirmar com ele qual das duas ele
+espera.
+
+### Exatamente três vértices por face
+
+`<def_face> ::= KW_F <conjunto> <conjunto> <conjunto>` fixa a face em três
+vértices — um triângulo. `f 1/1/1 2/2/2 3/3/3 4/4/4` é erro sintático, e o
+`cube.obj` está de acordo, porque cada face quadrada dele já vem decomposta em
+dois triângulos.
+
 ### Iteração em vez de recursão
 
-A gramática acima escreve `<commands>` e `<more_vertices>` como recursão à
+A gramática acima escreve `<commands>` como recursão à
 direita, mas `commands()` e `moreVertices()` são implementados com laços
 `while`, não com chamada recursiva a si mesmos. Um modelo `.obj` pode ter
 milhares de comandos (vértices, normais, coordenadas de textura, faces), e

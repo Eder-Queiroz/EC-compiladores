@@ -49,34 +49,28 @@ public final class Parser {
             return;
         }
         if (accept(TokenType.KW_V)) {
-            number("faltou a coordenada x do vértice");
-            number("faltou a coordenada y do vértice");
-            number("faltou a coordenada z do vértice");
+            expect(TokenType.FLOAT, "faltou a coordenada x do vértice");
+            expect(TokenType.FLOAT, "faltou a coordenada y do vértice");
+            expect(TokenType.FLOAT, "faltou a coordenada z do vértice");
             return;
         }
         if (accept(TokenType.KW_VN)) {
-            number("faltou a componente x do vetor normal");
-            number("faltou a componente y do vetor normal");
-            number("faltou a componente z do vetor normal");
+            expect(TokenType.FLOAT, "faltou a componente x do vetor normal");
+            expect(TokenType.FLOAT, "faltou a componente y do vetor normal");
+            expect(TokenType.FLOAT, "faltou a componente z do vetor normal");
             return;
         }
         if (accept(TokenType.KW_VT)) {
-            number("faltou a coordenada u da textura");
-            number("faltou a coordenada v da textura");
+            expect(TokenType.FLOAT, "faltou a coordenada u da textura");
+            expect(TokenType.FLOAT, "faltou a coordenada v da textura");
             return;
         }
         expect(TokenType.KW_F, "esperado um comando do formato OBJ");
         vertex();
         vertex();
         vertex();
-        moreVertices();
     }
 
-    private void moreVertices() throws CompilationException {
-        while (check(TokenType.INTEIRO)) {
-            vertex();
-        }
-    }
 
     private void vertex() throws CompilationException {
         expect(TokenType.INTEIRO, "faltou o índice do vértice na face");
@@ -104,12 +98,6 @@ public final class Parser {
         }
     }
 
-    private void number(String message) throws CompilationException {
-        if (accept(TokenType.INTEIRO) || accept(TokenType.FLOAT)) {
-            return;
-        }
-        throw new SyntaxException(message, token.line(), token.column());
-    }
 
     private void advance() throws CompilationException {
         token = lexer.nextToken();
