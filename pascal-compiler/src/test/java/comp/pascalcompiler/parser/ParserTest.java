@@ -194,7 +194,7 @@ class ParserTest {
     }
 
     @Test
-    void rejectsUnclosedParameterList() {
+    void rejectsParameterListWithoutNameAfterSemicolon() {
         SyntaxException exception = syntaxErrorOf(
                 "program p; procedure mostra(a : integer; begin x := 1; end; begin x := 1; end.");
 
